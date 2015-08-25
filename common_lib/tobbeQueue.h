@@ -5,8 +5,8 @@
  *      Author: orientera
  */
 
-#ifndef QUEUE_H_
-#define QUEUE_H_
+#ifndef TOBBEQUEUE_H_
+#define TOBBEQUEUE_H_
 
 #define MAX_NR_EL_QUEUE		30
 #define MAX_MSG_SIZE		4
@@ -35,4 +35,4 @@ int isFull(Queue* q1);
 
 
 
-#endif /* QUEUE_H_ */
+#endif /* TOBBEQUEUE_H_ */
