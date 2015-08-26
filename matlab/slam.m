@@ -52,6 +52,9 @@ function slam_OpeningFcn(hObject, eventdata, handles, varargin)
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to slam (see VARARGIN)
 
+imgData = imread('jpegstop.jpg');   % or: imread(URL)
+hObject = uicontrol('CData',imgData);
+
 % Choose default command line output for slam
 handles.output = hObject;
 
