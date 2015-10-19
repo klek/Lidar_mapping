@@ -52,6 +52,7 @@
 #include "Lidar_setup.h"
 #include "UART_setup.h"
 #include "drive_control.h"
+#include "setupTimers.h"
 
 
 /******************************************************************
@@ -131,6 +132,8 @@ int main(void) {
 	init_stepper();							// Init the GPIOs used for the stepper and loading LED
 	InitI2C1();								// Init the communication with the lidar-unit through I2C
 	InitPWM();
+	setupTimers();
+
 
 	/**************************************
 	 * 	Init HW-interrupts
