@@ -46,10 +46,10 @@ typedef enum {
  */
 // UART interrupt handler
 void uartIntHandler(void);
-// Timer A0 interrupt handler
-void timerA0IntHandler(void);
+// Timer 1 interrupt handler
+void timer1IntHandler(void);
 // Timer A1 interrupt handler
-void timerA1IntHandler(void);
+void timer2IntHandler(void);
 // Function for initialization of ISRs used
 int32_t initInts(void);
 // Function for initialization of tasks used in this project

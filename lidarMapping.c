@@ -37,6 +37,8 @@
 
 // Tivaware includes
 #include "inc/hw_memmap.h"
+#include "driverlib/timer.h"
+#include "driverlib/uart.h"
 
 // Project specific includes
 #include "lidarMapping.h"
@@ -69,7 +71,12 @@ uint8_t step = 0;
 // Semaphores
 xSemaphoreHandle stepperSemHandle;
 
+// Defined bits in the status vector
+#define TAKE_STEP						(1 << 0)
+#define TAKE_MEAS						(1 << 1)
 
+// The status vactor
+static uint8_t stat_vec = 0;
 /******************************************************************
  * 			Declarations
  */
@@ -83,22 +90,38 @@ int32_t initInts(void) {
 
 // UART interrupt handler
 void uartIntHandler(void) {
+	// Clear the interrupt
+    UARTIntClear(UART5_BASE, UARTIntStatus(UART5_BASE, true));
 
+    // Signal the UART SW-interrupt
 }
 
 // Timer A0 interrupt handler
-void timerA0IntHandler(void) {
+void timer1IntHandler(void) {
+	// Clear the interrupt
+	TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
 
+	// Test if step should be taken
+	if ( stat_vec & TAKE_STEP ) {
+		// Do something
+		// SIGNAL STEPPER TASK
+	}
 }
 
 // Timer A1 interrupt handler
-void timerA1IntHandler(void) {
+void timer2IntHandler(void) {
+	// Clear the interrupt
+	TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
 
+	// Test if measure should be taken
+	if ( stat_vec & TAKE_MEAS ) {
+		// Do something
+		// SIGNAL MEASURE TASK
+	}
 }
 
 // Inits the tasks used
 int32_t initTasks(void) {
-
 	// Initialiaze the stepper task and stepper mutex
 	stepperSemHandle = xSemaphoreCreateMutex();
 	if ( xTaskCreate(stepperTask, (signed char *)"STEPPER", STEPPER_STACK_SIZE, NULL,
