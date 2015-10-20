@@ -34,9 +34,9 @@
  */
 void setupTimers(void);
 
-void disable_Timer(uint32_t Timer);
+void disableTimer(uint32_t Timer);
 
-void enable_Timer(uint32_t Timer, uint32_t Load);
+void enableTimer(uint32_t Timer, uint32_t Load);
 
 /******************************************************************
  * 			Declarations

@@ -46,7 +46,9 @@
 /******************************************************************
  * 			Declarations
  */
-// Initialize timers
+/*************************************************
+ *	Initializes timers
+ */
 void setupTimers(void) {
 	// Timer 1 setup code
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);			// enable Timer 1 periph clks
@@ -69,13 +71,24 @@ void setupTimers(void) {
 
 }
 
-// Disable the specified timer
-void disable_Timer(uint32_t Timer) {
+/*************************************************
+ *	Disables the specified timer
+ */
+void disableTimer(uint32_t Timer) {
 	TimerDisable(Timer, TIMER_A);						// disable Timer
 }
 
-// Enables the specified timer with the specified period
-void enable_Timer(uint32_t Timer, uint32_t Load) {
+/*************************************************
+ * 	Enables the specified timer with the specified period
+ * 	Usually this period is calculated from the specified SYSCLOCK
+ * 	Ex:
+ * 		#define SYSCLOCK	80000000
+ * 		#define MEAS_DELAY	40
+ *
+ * 		SYSCLOCK / MEAS_DELAY would then give a period of about
+ * 		20 ms
+ */
+void enableTimer(uint32_t Timer, uint32_t Load) {
 	// Resest the current value
 	HWREG(Timer + TIMER_O_TAV) = 0;
 	TimerLoadSet(Timer, TIMER_A, Load);

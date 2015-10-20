@@ -35,6 +35,9 @@ uint16_t I2CSend(uint16_t WriteAddr, uint8_t reg, uint8_t value);
 // Reading the values from the lidar-unit
 uint16_t readLidar(/*uint16_t RegL, uint16_t RegH*/void);
 
+// This function tells Lidar to start measure
+void reqLidarMeas(void);
+
 // Prototype for the stepper
 void init_stepper(void);
 

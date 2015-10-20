@@ -131,6 +131,11 @@ uint16_t readLidar(/*uint16_t RegL,uint16_t RegH*/void) {
     return Dist;
 }
 
+// This function tells Lidar to start measure
+void reqLidarMeas(void) {
+	I2CSend(L_SLAVE_ADDR,0x00,0x04);
+}
+
 // This function should initialize the GPIOs used to control the steppper
 void init_stepper(void) {
 	// Specify the pins we are gonna use
