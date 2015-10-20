@@ -1,0 +1,8 @@
+"${SW_ROOT}/third_party"
+"${SW_ROOT}/third_party/FreeRTOS/Source/include"
+"${SW_ROOT}/third_party/FreeRTOS"
+"${SW_ROOT}/third_party/FreeRTOS/Source/portable/CCS/ARM_CM4F"
+
+
+/home/orientera/TNE095/Tiva_programmering/Lidar_mapping/switch_task.c
+
