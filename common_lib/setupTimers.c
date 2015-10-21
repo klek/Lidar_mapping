@@ -20,6 +20,7 @@
 #include "inc/hw_timer.h"
 #include "inc/hw_memmap.h"
 #include "inc/hw_types.h"
+#include "inc/tm4c123gh6pm.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/interrupt.h"
 #include "driverlib/timer.h"
@@ -57,6 +58,7 @@ void setupTimers(void) {
 	uint32_t ui32Period;
 	ui32Period = (SYSCLOCK / MEAS_DELAY);					// period = CPU clk div 50 (20ms)
 	TimerLoadSet(TIMER1_BASE, TIMER_A, ui32Period);			// set Timer 1 period
+	IntEnable(INT_TIMER1A);
 	TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT);		// enables Timer 1 to interrupt CPU
 
 	// Timer 2 setup code
@@ -67,6 +69,7 @@ void setupTimers(void) {
 	// Initialize the timer for an 5 ms delay between steps
 	ui32Period = ( SYSCLOCK / TIME_BET_STEP );
 	TimerLoadSet(TIMER2_BASE, TIMER_A, ui32Period);			// set Timer 2 period
+	IntEnable(INT_TIMER2A);
 	TimerIntEnable(TIMER2_BASE, TIMER_TIMA_TIMEOUT);		// enables Timer 2 to interrupt CPU
 
 }

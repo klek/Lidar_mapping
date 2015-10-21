@@ -168,3 +168,18 @@ int8_t readMSG(Queue* q1) {
         }
 }
 
+int8_t readUARTMessage(uint8_t * dataArr, uint8_t size) {
+	// Initialize a counter for the messages
+	uint8_t i = 0;
+	// Read the buffer and
+	while ( i < size && UARTCharsAvail(UART5_BASE) ) {
+		dataArr[i++] = UARTCharGet(UART5_BASE);
+	}
+
+	// Test if there is still data in the register
+	if ( UARTCharsAvail(UART5_BASE) && i >= size ) {
+		// There is more data than we can read in, return -1
+		return MORE_DATA_AVAIL;
+	}
+	return i;
+}

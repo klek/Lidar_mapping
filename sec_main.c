@@ -44,8 +44,13 @@
  * 			Macros
  */
 #define MAP_DATA_SIZE					200
+#define MAX_UART_MSG_SIZE				5
 #define MEAS_DELAY						40
 #define SYSCLOCK						80000000
+
+#define DRIVE_FORWARD_TIME				SYSCLOCK * 2		// This should represent a delay of 2 seconds
+#define DRIVE_TURN_180_TIME				SYSCLOCK			// This should represent a delay of 1 seconds
+#define DRIVE_TURN_TIME					SYSCLOCK / 2		// This should represent a delay of 0.5 seconds
 
 /******************************************************************
  * 			Globals
@@ -55,9 +60,13 @@ static uint8_t stepCount = 0;
 static uint8_t step = 0;
 
 // Defined bits in the status vector
-#define TAKE_STEP						(1 << 0)
+#define DRIVE							(1 << 0)
 #define TAKE_MEAS						(1 << 1)
-#define DRIVE							(1 << 2)
+#define DRIVE_F							(1 << 2)
+#define DRIVE_L							(1 << 3)
+#define DRIVE_R							(1 << 4)
+#define DRIVE_LL						(1 << 5)
+#define DRIVE_STOP						(1 << 6)
 #define BUSY							(1 << 7)
 
 // Defined bits in the interrupt vector
@@ -76,7 +85,7 @@ static uint8_t int_vec = 0;
 void uartIntHandler(void);
 void timerA1IntHandler(void);
 void timerA2IntHandler(void);
-
+void parseMsg(uint8_t * dataArr, uint8_t size);
 
 /******************************************************************
  * 			Main-function
@@ -119,10 +128,8 @@ int main(void) {
 	disableTimer(TIMER1_BASE);
 	disableTimer(TIMER2_BASE);
 
-	// TEST
-	UARTDisable(UART5_BASE);
-	UARTIntDisable(UART5_BASE, UART_INT_RX);
-
+	// Enable all interrupts
+	IntMasterEnable();
 	/**************************************
 	 * 	State 3
 	 */
@@ -142,20 +149,30 @@ int main(void) {
 		// Highest priority case first
 
 
-		// Check both interrupts each iteration in the loop
+		// Check both interrupts at each iteration in the loop
 		if ( int_vec & UART_INT ) {
 			// Reset the indication
 			int_vec &= ~UART_INT;
+
+			// Init data array
+			uint8_t dataArr[MAX_UART_MSG_SIZE];
+
 			// Collect the message
+			if ( readUARTMessage(dataArr, MAX_UART_MSG_SIZE) < SUCCESS ) {
+				// If we have recieved more data than fits in the vector we should simply
+				// go in here again and grab data
+				int_vec |= UART_INT;
+			}
+			// We have gathered a message
+			// and now need to determine what the message is
+			parseMsg(dataArr, MAX_UART_MSG_SIZE);
 		}
-		/*
-		 * This is not needed
-		 */
-/*		// Checking stepper interrupt
+		// Checking drive (movement) interrupt
 		if ( int_vec & TIMER2_INT ) {
 			int_vec &= ~TIMER2_INT;
-			// Indicate stepper to step
-		}*/
+			// Set drive-stop in status vector
+			stat_vec |= DRIVE_STOP;
+		}
 		// Checking measure interrupt
 		if ( int_vec & TIMER1_INT ) {
 			int_vec &= ~TIMER1_INT;
@@ -194,24 +211,56 @@ int main(void) {
 			}
 		}
 
+		// Check the drive_stop flag, which always should be set unless we should move
+		if ( stat_vec & DRIVE_STOP ) {
+			// Stop all movement
+			SetPWMLevel(0,0);
+			halt();
+
+			// MAKE SURE all drive-flags are not set
+			stat_vec &= ~(DRIVE_F | DRIVE_L | DRIVE_R | DRIVE_LL);
+		}
+		// Should we drive?
+		else if ( stat_vec & DRIVE ) {
+			// Increase PWM
+			increase_PWM(0,MAX_FORWARD_SPEED,0,MAX_FORWARD_SPEED);
+			if ( stat_vec & DRIVE_F ) {
+				enableTimer(TIMER2_BASE, DRIVE_FORWARD_TIME);
+			}
+			else if ( stat_vec & DRIVE_LL ){
+				enableTimer(TIMER2_BASE, DRIVE_TURN_180_TIME);
+			}
+			else {
+				enableTimer(TIMER2_BASE, DRIVE_TURN_TIME);
+			}
+		}
 		if ( !(stat_vec & BUSY) ) {
 			// Tasks
-			if ( stat_vec & DRIVE ) {
-				// Call drive function
-			}
-			else if ( stat_vec & TAKE_MEAS ) {
-				// Request reading from LIDAR
-				reqLidarMeas();
-				// Start TIMER1
-				enableTimer(TIMER1_BASE, (SYSCLOCK / MEAS_DELAY));
-				// We are busy
-				stat_vec |= BUSY;
-			}
-/*			switch ( stat_vec ) {
-				case ((uint8_t)DRIVE) :
+			switch ( stat_vec ) {
+				case ((uint8_t)DRIVE_F) :
 					// Call drive function
+					go_forward();
+					// Set the drive flag & BUSY
+					stat_vec |= DRIVE | BUSY;
 					break;
-
+				case ((uint8_t)DRIVE_L) :
+					// Call drive-left function
+					go_left();
+					// Set the drive flag
+					stat_vec |= DRIVE | BUSY;
+					break;
+				case ((uint8_t)DRIVE_R) :
+					// Call drive-right function
+					go_right();
+					// Set the drive flag
+					stat_vec |= DRIVE | BUSY;
+					break;
+				case ((uint8_t)DRIVE_LL) :
+					// Call turn 180-degrees function
+					go_back();
+					// Set the drive flag
+					stat_vec |= DRIVE | BUSY;
+					break;
 				case ((uint8_t)TAKE_MEAS) :
 					// Request reading from LIDAR
 					reqLidarMeas();
@@ -223,7 +272,7 @@ int main(void) {
 
 				default:
 					break;
-			}*/
+			}
 		}
 	}
 }
@@ -244,11 +293,11 @@ void uartIntHandler(void) {
  * Not currently used
  */
 void timerA2IntHandler(void) {
-	// Do random stuff to get debug
-	if ( 1 == 1 ){
-		int asd = 0;
-		asd += 4;
-	}
+	// Clear the interrupt
+	TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
+
+	// Set the corresponding flag in the bit
+	int_vec |= TIMER2_INT;
 }
 
 
@@ -259,4 +308,27 @@ void timerA1IntHandler(void) {
 
 	// Set the corresponding flag in the bit
 	int_vec |= TIMER1_INT;
+}
+
+void parseMsg(uint8_t * dataArr, uint8_t size) {
+	uint8_t i = 0;
+	for ( ; i < size; i++ ) {
+		switch ( dataArr[i] ) {
+			case 'w': stat_vec |= DRIVE;
+				break;
+			case 'd': stat_vec |= DRIVE_R;
+				break;
+			case 'a': stat_vec |= DRIVE_L;
+				break;
+			case 's': stat_vec |= DRIVE_LL;
+				break;
+			case 'r': stat_vec |= TAKE_MEAS;
+				break;
+			case 'q': stat_vec |= DRIVE_STOP;
+				break;
+
+			default:
+				break;
+		}
+	}
 }

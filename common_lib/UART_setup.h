@@ -14,6 +14,10 @@
 #define MAX_MSG_SIZE    		4
 #define SYSCLOCK				80000000
 
+typedef enum {
+	SUCCESS = 0,
+	MORE_DATA_AVAIL = -1
+}UART_ERROR;
 
 // Prototype to init the bluetooth communication over UART
 void bluetooth_init(void);
@@ -27,6 +31,7 @@ void sendMSG(Queue* q1);
 // Prototype for recieving data over bluetooth
 int8_t readMSG(Queue* q1);
 
-
+// Prototype for recieving data over UART
+int8_t readUARTMessage(uint8_t * dataArr, uint8_t size);
 
 #endif /* UART_SETUP_H_ */
