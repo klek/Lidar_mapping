@@ -44,12 +44,12 @@
  * 			Macros
  */
 #define MAP_DATA_SIZE					200
-#define MAX_UART_MSG_SIZE				5
+#define MAX_UART_MSG_SIZE				4
 #define MEAS_DELAY						40
 #define SYSCLOCK						80000000
 
-#define DRIVE_FORWARD_TIME				SYSCLOCK * 2		// This should represent a delay of 2 seconds
-#define DRIVE_TURN_180_TIME				SYSCLOCK			// This should represent a delay of 1 seconds
+#define DRIVE_FORWARD_TIME				SYSCLOCK * 10		// This should represent a delay of 2 seconds
+#define DRIVE_TURN_180_TIME				SYSCLOCK * 2		// This should represent a delay of 1 seconds
 #define DRIVE_TURN_TIME					SYSCLOCK / 2		// This should represent a delay of 0.5 seconds
 
 /******************************************************************
@@ -124,7 +124,7 @@ int main(void) {
 	/**************************************
 	 * 	State 2
 	 */
-	// Init HW-interrupts
+	// Disable the timers that are used
 	disableTimer(TIMER1_BASE);
 	disableTimer(TIMER2_BASE);
 
@@ -154,6 +154,9 @@ int main(void) {
 			// Reset the indication
 			int_vec &= ~UART_INT;
 
+			// Remove drive-stop flag to enable movement
+			stat_vec &= ~DRIVE_STOP;
+
 			// Init data array
 			uint8_t dataArr[MAX_UART_MSG_SIZE];
 
@@ -170,6 +173,8 @@ int main(void) {
 		// Checking drive (movement) interrupt
 		if ( int_vec & TIMER2_INT ) {
 			int_vec &= ~TIMER2_INT;
+			// Disable TIMER2
+			disableTimer(TIMER2_BASE);
 			// Set drive-stop in status vector
 			stat_vec |= DRIVE_STOP;
 		}
@@ -207,6 +212,7 @@ int main(void) {
 				enableTimer(TIMER1_BASE, (SYSCLOCK / MEAS_DELAY));
 			}
 			else {
+				sendUARTDataVector(mapData, MAX_UART_MSG_SIZE);
 				stat_vec &= ~BUSY;
 			}
 		}
@@ -218,16 +224,18 @@ int main(void) {
 			halt();
 
 			// MAKE SURE all drive-flags are not set
-			stat_vec &= ~(DRIVE_F | DRIVE_L | DRIVE_R | DRIVE_LL);
+			stat_vec &= ~(DRIVE_F | DRIVE_L | DRIVE_R | DRIVE_LL | BUSY);
 		}
 		// Should we drive?
 		else if ( stat_vec & DRIVE ) {
+			// Remove drive flag
+			stat_vec &= ~DRIVE;
 			// Increase PWM
 			increase_PWM(0,MAX_FORWARD_SPEED,0,MAX_FORWARD_SPEED);
 			if ( stat_vec & DRIVE_F ) {
 				enableTimer(TIMER2_BASE, DRIVE_FORWARD_TIME);
 			}
-			else if ( stat_vec & DRIVE_LL ){
+			else if ( stat_vec & DRIVE_LL ) {
 				enableTimer(TIMER2_BASE, DRIVE_TURN_180_TIME);
 			}
 			else {
@@ -294,7 +302,7 @@ void uartIntHandler(void) {
  */
 void timerA2IntHandler(void) {
 	// Clear the interrupt
-	TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
+	TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
 
 	// Set the corresponding flag in the bit
 	int_vec |= TIMER2_INT;
@@ -314,7 +322,7 @@ void parseMsg(uint8_t * dataArr, uint8_t size) {
 	uint8_t i = 0;
 	for ( ; i < size; i++ ) {
 		switch ( dataArr[i] ) {
-			case 'w': stat_vec |= DRIVE;
+			case 'w': stat_vec |= DRIVE_F;
 				break;
 			case 'd': stat_vec |= DRIVE_R;
 				break;

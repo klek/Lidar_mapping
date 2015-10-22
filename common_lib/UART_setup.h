@@ -34,4 +34,7 @@ int8_t readMSG(Queue* q1);
 // Prototype for recieving data over UART
 int8_t readUARTMessage(uint8_t * dataArr, uint8_t size);
 
+// Function for sending data vectors over UART
+void sendUARTDataVector(uint16_t * data, int size);
+
 #endif /* UART_SETUP_H_ */

@@ -54,6 +54,7 @@ void bluetooth_init(void) {
     UARTConfigSetExpClk(UART5_BASE, SYSCLOCK, 9600, (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
 
     // Remember to enable the interrupt for the UART-config
+    IntEnable(INT_UART5);
     UARTIntEnable(UART5_BASE, UART_INT_RX);
     UARTEnable(UART5_BASE);
     // Also enable FIFO interrupt
@@ -182,4 +183,14 @@ int8_t readUARTMessage(uint8_t * dataArr, uint8_t size) {
 		return MORE_DATA_AVAIL;
 	}
 	return i;
+}
+
+void sendUARTDataVector(uint16_t * data, int size) {
+        int i = 0;
+        for (; i < size; i++) {
+        	// Send upper-byte
+            UARTCharPut(UART5_BASE, (data[i] & 0xFF00));
+            // Send lower-byte
+            UARTCharPut(UART5_BASE, (data[i] & 0x00FF));
+        }
 }
