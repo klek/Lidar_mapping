@@ -22,7 +22,7 @@ function varargout = LidarMapping(varargin)
 
 % Edit the above text to modify the response to help LidarMapping
 
-% Last Modified by GUIDE v2.5 23-Oct-2015 12:58:14
+% Last Modified by GUIDE v2.5 01-Feb-2016 17:30:25
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -167,6 +167,7 @@ function pushbutton8_Callback(hObject, eventdata, handles)
     counter = 2;
     for k = 203:2:400
         SecondRadii(counter) = 256*radii(i)+radii(i+1);
+        %Might have to filter outliers > 5000.
         counter = counter +1;
     end
     %add the first value of FirstRadii to SecondRadii
@@ -187,8 +188,12 @@ function pushbutton8_Callback(hObject, eventdata, handles)
     SecondRadii = SecondRadii';
     FirstRadii = FirstRadii'
     %plot in polar
+%    keyboard
     polar(phi1,FirstRadii,'.');
+  %  ylim([0 400]);
     
+  %  view([0 180]);
+    %halfPolar(phi1,FirstRadii,'g-.',120);
     %polar(phi1,SecondRadii);
    
 
@@ -293,3 +298,14 @@ function pushbutton7_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to pushbutton6 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
+
+
+% --- Executes when user attempts to close figure1.
+function figure1_CloseRequestFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: delete(hObject) closes the figure
+fclose(handles.b1);
+delete(hObject);
