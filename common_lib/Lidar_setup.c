@@ -17,7 +17,7 @@ uint16_t I2CReceive(uint16_t ReadAddr,uint16_t WriteAddr, uint8_t reg) {
 	uint16_t Data = 0;
 
 	//Initialize the i2c for writnign to slave device
-	I2CMasterSlaveAddrSet(I2C1_BASE, WriteAddr >> 1, false);
+	I2CMasterSlaveAddrSet(I2C1_BASE, WriteAddr, false);
 
 	//Register to be read
 	I2CMasterDataPut(I2C1_BASE, reg);
@@ -29,7 +29,7 @@ uint16_t I2CReceive(uint16_t ReadAddr,uint16_t WriteAddr, uint8_t reg) {
 	while(I2CMasterBusy(I2C1_BASE));
 
 	//Initialize the i2c to read from slave device
-	I2CMasterSlaveAddrSet(I2C1_BASE, ReadAddr>>1, true);
+	I2CMasterSlaveAddrSet(I2C1_BASE, ReadAddr, true);
 
 	//Read first Byte
 	I2CMasterControl(I2C1_BASE, I2C_MASTER_CMD_BURST_RECEIVE_START);
@@ -57,6 +57,37 @@ uint16_t I2CReceive(uint16_t ReadAddr,uint16_t WriteAddr, uint8_t reg) {
 
 	// Return Data
 	return Data;
+}
+
+uint8_t i2cOneByteRead(uint32_t	SlaveAddr, uint8_t reg) {
+	//Writing register adress to slave device
+	I2CMasterSlaveAddrSet(I2C1_BASE, SlaveAddr, false);
+
+	//Register to be read
+	I2CMasterDataPut(I2C1_BASE, reg);
+
+	//Sends cotroll - and register adress-byte to slave device
+	I2CMasterControl(I2C1_BASE, I2C_MASTER_CMD_SINGLE_SEND);
+
+	// For MCU to to finnish transaction.
+	while( I2CMasterBusy(I2C1_BASE) );
+
+	//Initialize the i2c to read from slave
+	I2CMasterSlaveAddrSet(I2C1_BASE, SlaveAddr, true);
+
+	//Send Controlbyte and read from register specified.
+	I2CMasterControl(I2C1_BASE, I2C_MASTER_CMD_SINGLE_RECEIVE);
+
+	//Wait for MCU to finnish the transaction
+	while( I2CMasterBusy(I2C1_BASE) );
+
+	uint16_t test =	I2CMasterErr(I2C1_BASE);
+
+	if ( test != 0 ) {
+		while (1);
+	}
+
+	return I2CMasterDataGet(I2C1_BASE);
 }
 
 void InitI2C1(void){
@@ -91,52 +122,59 @@ void InitI2C1(void){
 
 
 uint16_t I2CSend(uint16_t WriteAddr, uint8_t reg, uint8_t value) {
-	//Writing register adress to slave device
-	I2CMasterSlaveAddrSet(I2C1_BASE, WriteAddr >> 1, false);
+	// Writing register adress to slave device
+//	I2CMasterSlaveAddrSet(I2C1_BASE, WriteAddr >> 1, false);
+	I2CMasterSlaveAddrSet(I2C1_BASE, WriteAddr, false);
 
-	//Register to be read
+	// Register to be read
 	I2CMasterDataPut(I2C1_BASE, reg);
 
-	//Sends cotroll - and register adress -byte to slave device
+	// Sends cotroll - and register adress - byte to slave device
 	I2CMasterControl(I2C1_BASE, I2C_MASTER_CMD_BURST_SEND_START);
+
+	// Wait until slave device finished it's transaction
+	while(I2CMasterBusy(I2C1_BASE));
+
+	// Register address to slave device
+//	I2CMasterSlaveAddrSet(I2C1_BASE, WriteAddr >> 1, false);
+	I2CMasterSlaveAddrSet(I2C1_BASE, WriteAddr, false);
+
+	// Value to send
+	I2CMasterDataPut(I2C1_BASE, value);
+
+	//Sends control - and register adress - byte to slave device
+	I2CMasterControl(I2C1_BASE, I2C_MASTER_CMD_BURST_SEND_FINISH);
 
 	//Wait until slave device finished it's transaction
 	while(I2CMasterBusy(I2C1_BASE));
 
-	//Register adress to slave device
-	I2CMasterSlaveAddrSet(I2C1_BASE, WriteAddr >> 1, false);
-
-	// Value to send.
-	I2CMasterDataPut(I2C1_BASE, value);
-
-	//Sends cotroll - and register adress -byte to slave device
-	I2CMasterControl(I2C1_BASE, I2C_MASTER_CMD_BURST_SEND_FINISH);
-
-	// //Wait until slave device finished it's transaction
-	while(I2CMasterBusy(I2C1_BASE));
-
-	// If error occur return messg.
+	// If error occur return message
 	return I2CMasterErr(I2C1_BASE);
 }
 
 // This function should simply read the value from the Lidar-unit
 uint16_t readLidar(/*uint16_t RegL,uint16_t RegH*/void) {
-        uint16_t Dist = 0; // Integer to store data
-        //I2CSend(L_SLAVE_ADDR,0x00,0x04); // Prepare Lidar for reading
-        //SysCtlDelay(200000);
-        Dist =  I2CReceive(LID_READ_ADDR, LID_WRITE_ADDR, LID_2_BYTE_READ); // Reads the 8 LSB
-        //SysCtlDelay(200000);
-        //Dist = Dist + (I2CReceive(L_SLAVE_ADDR, RegH)<< 8); //Reads the 8 MSB
+	uint16_t Dist = 0; // Integer to store data
+	//I2CSend(L_SLAVE_ADDR,0x00,0x04); // Prepare Lidar for reading
+	//SysCtlDelay(200000);
+	Dist =  I2CReceive(L_SLAVE_ADDR, L_SLAVE_ADDR, LID_2_BYTE_READ); // Reads the 8 LSB
+//	Dist = i2cOneByteRead(L_SLAVE_ADDR, REGLOW);
+	//SysCtlDelay(200000);
+//	Dist += (i2cOneByteRead(L_SLAVE_ADDR, REGHIGH)<< 8); //Reads the 8 MSB
 
     return Dist;
 }
 
 // This function tells Lidar to start measure
 void reqLidarMeas(void) {
-	I2CSend(L_SLAVE_ADDR,0x00,0x04);
+	uint16_t errMsg = 0;
+	errMsg = I2CSend(L_SLAVE_ADDR,0x00,0x04);
+	if ( errMsg != 0 ) {
+		while(1);
+	}
 }
 
-// This function should initialize the GPIOs used to control the steppper
+// This function should initialize the GPIOs used to control the stepper
 void init_stepper(void) {
 	// Specify the pins we are gonna use
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);

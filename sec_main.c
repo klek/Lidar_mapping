@@ -45,7 +45,7 @@
  */
 #define MAP_DATA_SIZE					200
 #define MAX_UART_MSG_SIZE				4
-#define MEAS_DELAY						40
+#define MEASUREMENT_DELAY				30
 #define SYSCLOCK						80000000
 
 #define DRIVE_FORWARD_TIME				SYSCLOCK * 10		// This should represent a delay of 2 seconds
@@ -186,17 +186,18 @@ int main(void) {
 
 			// Take reading from LIDAR
 			mapData[stepCount++] = readLidar();
+			SysCtlDelay(2000);
 
 			// Take step
 			// Note: We need to take double meas at randvillkor (100) !!!!!
 			if ( stepCount > 0 && stepCount < 100 ) {
-				stepDir = 0;
-			}
-			else if ( stepCount >= 100 && stepCount < 200) {
 				stepDir = 1;
 			}
-			else {
+			else if ( stepCount >= 100 && stepCount < 200) {
 				stepDir = 0;
+			}
+			else {
+				stepDir = 1;
 				stepCount = 0;
 
 				// Reset busy-flag
@@ -209,10 +210,10 @@ int main(void) {
 
 			if ( stat_vec & TAKE_MEAS ) {
 				// Restart TIMER1
-				enableTimer(TIMER1_BASE, (SYSCLOCK / MEAS_DELAY));
+				enableTimer(TIMER1_BASE, (SYSCLOCK / MEASUREMENT_DELAY));
 			}
 			else {
-				sendUARTDataVector(mapData, MAX_UART_MSG_SIZE);
+				sendUARTDataVector(mapData, MAP_DATA_SIZE);
 				stat_vec &= ~BUSY;
 			}
 		}
@@ -273,7 +274,7 @@ int main(void) {
 					// Request reading from LIDAR
 					reqLidarMeas();
 					// Start TIMER1
-					enableTimer(TIMER1_BASE, (SYSCLOCK / MEAS_DELAY));
+					enableTimer(TIMER1_BASE, (SYSCLOCK / MEASUREMENT_DELAY)); // if sysclock = 1 s, 1/120 = 8.3 ms
 					// We are busy
 					stat_vec |= BUSY;
 					break;

@@ -188,8 +188,10 @@ int8_t readUARTMessage(uint8_t * dataArr, uint8_t size) {
 void sendUARTDataVector(uint16_t * data, int size) {
         int i = 0;
         for (; i < size; i++) {
+
+        	uint8_t temp = (data[i] & 0x00FF);
         	// Send upper-byte
-            UARTCharPut(UART5_BASE, (data[i] & 0xFF00));
+            UARTCharPut(UART5_BASE, ((data[i] & 0xFF00) >> 8));
             // Send lower-byte
             UARTCharPut(UART5_BASE, (data[i] & 0x00FF));
         }
