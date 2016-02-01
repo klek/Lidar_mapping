@@ -1,0 +1,40 @@
+% Create connection to BT
+s = Bluetooth('EDgars',1);
+fopen(s);
+
+% Wait for user input to continue
+pause;
+fwrite(s,'s');
+
+% Wait until measurement are finnished
+pause;
+
+% Read all data
+data=fread(s,202);
+
+% Create array to store final distance into
+Ndata = zeros(1,101);
+for( k = 2:2:202)
+	% Shift in MSB and LSB
+	Ndata(k/2) = data(k-1) + bitshift(data(k),8);
+end
+% Standard deviation
+st = std(Ndata)
+
+% Max distance
+mx = max(Ndata)
+
+% Min distance
+mn = min(Ndata)
+
+% Calculate x-values for normal plot
+x = (mn-2):(mx-mn +4)/101:(mx+2);
+
+% Normalize data
+norm = normpdf(x,mean(Ndata),st);
+
+% Plot normal deviation
+plot(x,norm)
+
+% Close bluetooth connection
+fclose(s);
