@@ -141,10 +141,10 @@ function pushbutton8_Callback(hObject, eventdata, handles)
     fwrite(handles.b1,'rrrr');
    % data = fgets(handles.b1)
    % testdata1 = fread(handles.b1,4)
-   % keyboard
+    keyboard
     %all measurements in handles.b1 buffer will end up in radii 
   
-    radii = fread(handles.b1,400);    
+    radii = fread(handles.b1);    
     %** The plotting method**
     %radii = 400x1 double, the first value is upper byte at 0
     %degrees and the second value is lower byte at 0 degrees
@@ -178,19 +178,10 @@ function pushbutton8_Callback(hObject, eventdata, handles)
     %matlab is indexed from 1 not from 0, causes some angle-trouble because
     %the 200th step at angle 180 degrees. We get double measures everywhere
     %except the 200th step. and the last step which is 0 angle again.
-    phi1 = 0:1.8:180
-    phi1 = phi1.*pi./180
-    %Reverse the values and plot against phi1 again, associate the correct
-    %radius and angle
-    SecondRadii = fliplr(SecondRadii);
-    %Make the radius and angles same format, 1x101
-    SecondRadii = SecondRadii';
-    FirstRadii = FirstRadii'
-    %plot in polar
-    polar(phi1,FirstRadii,'.');
+    phi1 = 0:1.8:180;
+    phi2 = fliplr(phi1);
     
-    %polar(phi1,SecondRadii);
-   
+    
 
     
     
